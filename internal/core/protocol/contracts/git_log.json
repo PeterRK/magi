@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "properties": {
+    "ref": {"type": "string", "minLength": 1},
+    "limit": {"type": "integer", "minimum": 0, "maximum": 50}
+  },
+  "additionalProperties": false
+}

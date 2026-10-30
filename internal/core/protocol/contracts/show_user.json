@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:magi:revision:v1:show_user",
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string",
+      "minLength": 1
+    },
+    "wait_for_reply": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "message",
+    "wait_for_reply"
+  ],
+  "additionalProperties": false
+}

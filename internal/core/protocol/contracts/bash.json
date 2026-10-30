@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "required": [
+    "command"
+  ],
+  "properties": {
+    "command": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Bash script text, single or multiple lines."
+    },
+    "workdir": {
+      "type": "string",
+      "description": "Optional existing directory relative to ProjectRoot. Omit it or use . for the project root; never use an absolute path."
+    },
+    "timeout": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9223372036,
+      "description": "Command timeout in seconds, default 120. Increase explicitly for longer work. Cannot disable the timeout; the caller's remaining deadline still applies."
+    }
+  },
+  "additionalProperties": false
+}

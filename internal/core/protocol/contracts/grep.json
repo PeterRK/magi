@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "required": [
+    "pattern"
+  ],
+  "properties": {
+    "pattern": {
+      "type": "string",
+      "minLength": 1
+    },
+    "path": {
+      "type": "string"
+    },
+    "include": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:magi:revision:v1:finish_job",
+  "type": "object",
+  "properties": {"report": {"type": "string", "minLength": 1}},
+  "required": ["report"],
+  "additionalProperties": false
+}

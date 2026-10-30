@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:magi:revision:v3:history_read",
+  "type": "object",
+  "properties": {
+    "ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Exact numbered U/P/W/R marker already seen in context, such as P1. Read the complete immutable fragment.",
+      "pattern": "^[UPWR][1-9][0-9]*$"
+    }
+  },
+  "required": [
+    "ref"
+  ],
+  "additionalProperties": false
+}
