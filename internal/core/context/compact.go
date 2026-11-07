@@ -3,7 +3,6 @@ package context
 import (
 	"cmp"
 	"context"
-	"encoding/json"
 	"fmt"
 	"magi/internal/core/prompt"
 	"magi/internal/core/protocol"
@@ -146,10 +145,7 @@ func (c *Context) summarize(ctx context.Context, head, tailStart, sourceEnd int)
 }
 
 func summaryMessage(summary string) protocol.Message {
-	body, _ := json.Marshal(struct {
-		Summary string `json:"context_summary"`
-	}{summary})
-	return protocol.Message{Role: "user", Content: string(body)}
+	return protocol.Message{Role: "user", Content: summary}
 }
 
 func (c *Context) compacted(summary protocol.Message, head, tailStart int) (Context, error) {

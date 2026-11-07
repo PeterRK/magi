@@ -38,7 +38,7 @@ func TestCompactionRequestPreservesOriginalMessagesWithoutChangingSource(t *test
 	reasoning := "private reasoning"
 	messages := []protocol.Message{
 		{Role: "system", Content: `{"instructions":"head"}`},
-		{Role: "user", Content: `{"order_id":"P1","instruction":"first\nsecond\\nthird"}`},
+		{Role: "user", Content: `{"ref":"P1","instruction":"first\nsecond\\nthird"}`},
 		{Role: "assistant", Content: `{"note":"unchanged"}`, ReasoningContent: &reasoning, ToolCalls: []protocol.ToolCall{{ID: "read", Type: "function", Function: protocol.FunctionCall{Name: "read", Arguments: `{"path":"file.go","limit":9007199254740993}`}}}},
 		{Role: "tool", ToolCallID: "read", Content: `{"stdout_tail":"first\nsecond\\nthird","exit_code":0}`},
 		{Role: "user", Content: `{"ref":"W1","report":"{\"keep\":true}","value":9007199254740993,"nested":{"keep":true},"absent":null,"empty":""}`},
@@ -235,7 +235,7 @@ func TestSummaryCapacityRetryPreservesOriginalHistoryAndText(t *testing.T) {
 			t.Fatal("repairs discarded original history")
 		}
 		if calls == 1 {
-			return summaryResponse(strings.Repeat("\"", 2000)), nil
+			return summaryResponse(strings.Repeat("\"", 4000)), nil
 		}
 		if len(input.Messages) != 4 || input.Messages[3].Role != "system" || !strings.Contains(input.Messages[3].Content, "must remain below 600") || protocol.ValidateMessages(input.Messages) != nil {
 			t.Fatal("capacity retry retained the oversized summary or lost its diagnostic")
@@ -245,12 +245,9 @@ func TestSummaryCapacityRetryPreservesOriginalHistoryAndText(t *testing.T) {
 	if err := c.TryCompact(context.Background()); err != nil || calls != 2 {
 		t.Fatal("repair did not publish a usable checkpoint", err)
 	}
-	var summary struct {
-		Text string `json:"context_summary"`
-	}
 	message := c.messages[1]
-	if err := json.Unmarshal([]byte(message.Content), &summary); err != nil || message.Role != "user" || summary.Text != text {
-		t.Fatalf("compressed summary lost references or exact text: %s: %v", message.Content, err)
+	if message.Role != "user" || message.Content != text {
+		t.Fatalf("compressed summary lost references or exact text: %s", message.Content)
 	}
 	calls = 0
 	c = newTestContext(t, messages, config, func(context.Context, protocol.Request) (protocol.Response, error) {

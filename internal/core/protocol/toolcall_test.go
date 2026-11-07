@@ -43,24 +43,24 @@ func TestDisallowedToolFeedbackNamesAvailableTools(t *testing.T) {
 	}
 }
 
-func TestSchemaFeedbackNamesMissingOrderInstruction(t *testing.T) {
+func TestSchemaFeedbackNamesMissingPlanMemo(t *testing.T) {
 	schema, err := Contract("submit_plan")
 	if err != nil {
 		t.Fatal(err)
 	}
-	args := `{"orders":[{}],"memo":""}`
+	args := `{"orders":["Implement the request."]}`
 	tools := []Tool{{Type: "function", Function: Function{Name: "submit_plan", Parameters: schema}}}
 	call := ToolCall{ID: "original", Type: "function", Function: FunctionCall{Name: "submit_plan", Arguments: args}}
 	calls := []ToolCall{call}
 	_, err = validateToolCalls(tools, calls, "tool_calls")
 	var refusal ToolCallBatchError
-	if !errors.As(err, &refusal) || !refusal.Locatable || !strings.Contains(refusal.FeedbackMessage(), "$.orders[0].instruction: missing required property") {
-		t.Fatalf("missing actionable order feedback: %+v", err)
+	if !errors.As(err, &refusal) || !refusal.Locatable || !strings.Contains(refusal.FeedbackMessage(), "$.memo: missing required property") {
+		t.Fatalf("missing actionable plan feedback: %+v", err)
 	}
 	if refusal.Message != "tool arguments do not satisfy the frozen schema" || strings.Contains(refusal.FeedbackMessage(), "private instruction") {
 		t.Fatal("stable protocol identity changed or argument content was exposed")
 	}
-	calls[0].Function.Arguments = `{"orders":[{"instruction":"private instruction"}],"memo":""}`
+	calls[0].Function.Arguments = `{"orders":["private instruction"],"memo":""}`
 	if _, err := validateToolCalls(tools, calls, "tool_calls"); err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +92,9 @@ func TestControlSubmissionContracts(t *testing.T) {
 		valid      bool
 	}{
 		{"submit_plan", `{"orders":[],"memo":""}`, true},
-		{"submit_plan", `{"orders":[{"instruction":"Implement the request."}],"memo":"Dispatch intent."}`, true},
+		{"submit_plan", `{"orders":["Implement the request."],"memo":"Dispatch intent."}`, true},
+		{"submit_plan", `{"orders":[{"instruction":"Implement the request."}],"memo":"Dispatch intent."}`, false},
+		{"submit_plan", `{"orders":[""],"memo":"Dispatch intent."}`, false},
 		{"submit_plan", `{"orders":[]}`, false},
 		{"submit_plan", `{"memo":"Discuss the request."}`, false},
 		{"submit_plan", `{"orders":null,"memo":""}`, false},

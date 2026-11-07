@@ -27,7 +27,7 @@ func newInteractionApp(t *testing.T, lanes map[string][]protocol.Response) (*tes
 }
 func simpleDialogue() map[string][]protocol.Response {
 	return map[string][]protocol.Response{
-		"PLANNER/planner":     {planResponse(plannerPlanDraft{}), planResponse(plannerPlanDraft{Orders: []plannerOrderDraft{{Instruction: "Implement only the reviewed requirement; see [[P1]]."}}}), planResponse(plannerPlanDraft{})},
+		"PLANNER/planner":     {planResponse(plannerPlanDraft{}), planResponse(plannerPlanDraft{Orders: []string{"Implement only the reviewed requirement; see [[P1]]."}}), planResponse(plannerPlanDraft{})},
 		"PLANNER/interaction": {showStep("What should we do?", true), showStep("Request received; next round will implement it.", false), showStep("Implementing the reviewed request.", false), showStep("Delivered the result; preparing to sleep.", false)},
 
 		"PLANNER/interaction_summary": {textResponse("Implement the requirement and keep the public interface unchanged. [[U1]]")},
@@ -199,9 +199,9 @@ func TestWorkerFailureCancelsInteractionBeforeSiblingCleanup(t *testing.T) {
 		t.Run(map[bool]string{false: "cancellation", true: "independent interaction failure"}[extraFailure], func(t *testing.T) {
 			isolateBindings(t)
 			app, probe := newInteractionApp(t, map[string][]protocol.Response{
-				"PLANNER/planner": {planResponse(plannerPlanDraft{Orders: []plannerOrderDraft{
-					{Instruction: "Fail the first model request."},
-					{Instruction: "Hold a different operation open until cancellation."},
+				"PLANNER/planner": {planResponse(plannerPlanDraft{Orders: []string{
+					"Fail the first model request.",
+					"Hold a different operation open until cancellation.",
 				}})},
 			})
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -282,7 +282,7 @@ func TestPlannerInteractionJoinsWorkers(t *testing.T) {
 	isolateBindings(t)
 	lanes := map[string][]protocol.Response{
 		"PLANNER/planner": {planResponse(plannerPlanDraft{
-			Orders: []plannerOrderDraft{{Instruction: "Investigate the bounded scope."}},
+			Orders: []string{"Investigate the bounded scope."},
 		})},
 		"PLANNER/interaction": {showStep("Investigating.", false)},
 

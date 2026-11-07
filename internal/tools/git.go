@@ -150,7 +150,7 @@ func (g gitQuery) output(ctx context.Context, request toolExecution, result *git
 	if path == "" {
 		return fmt.Errorf("git output unavailable: %s", diagnostic)
 	}
-	dir, err := outputDir(request.ProjectRoot)
+	dir, err := outputDir(request.ProjectRoot, false)
 	if err != nil {
 		return err
 	}

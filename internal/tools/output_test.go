@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"unicode/utf8"
 
@@ -218,6 +219,49 @@ func TestBashDoesNotAdvertiseRemovedOutput(t *testing.T) {
 	result := decodeReceipt[bashResult](t, outcome.Body)
 	if result.Status != protocol.ToolSucceeded || result.ExitCode != 0 || result.StdoutDump != "" || result.StderrDump != "" || result.StdoutTotal != 131072 || !strings.HasSuffix(result.StdoutTail, "x") || !strings.Contains(result.Diagnostic, "output file unavailable") {
 		t.Fatalf("missing dump changed command outcome or hid output loss: %+v", result)
+	}
+}
+
+func TestOutputDirectoryRecoveryPreservesConcurrentCaptures(t *testing.T) {
+	root := t.TempDir()
+	var workers sync.WaitGroup
+	failures := make(chan error, 16)
+	for i := range 16 {
+		workers.Go(func() {
+			file, err := createOutput(root, fmt.Sprintf("%srestore-%d.stdout", outputDirectory, i))
+			if err == nil {
+				_, writeErr := file.WriteString("retained")
+				err = errors.Join(writeErr, file.Close())
+			}
+			failures <- err
+		})
+	}
+	workers.Wait()
+	close(failures)
+	for err := range failures {
+		noError(t, err)
+	}
+	for i := range 16 {
+		data, err := os.ReadFile(filepath.Join(root, tempDirectory, fmt.Sprintf("restore-%d.stdout", i)))
+		noError(t, err)
+		if string(data) != "retained" {
+			t.Fatalf("recovery cleared a sibling's output: %q", data)
+		}
+	}
+}
+
+func TestOutputDirectoryRecoveryDoesNotFollowReplacementLink(t *testing.T) {
+	root, target := t.TempDir(), t.TempDir()
+	noError(t, os.Symlink(target, filepath.Join(root, tempDirectory)))
+	file, err := createOutput(root, outputDirectory+"probe.stdout")
+	if err == nil {
+		file.Close()
+		t.Fatal("capture followed a replacement link")
+	}
+	entries, err := os.ReadDir(target)
+	noError(t, err)
+	if len(entries) != 0 {
+		t.Fatal("capture changed the link target", entries)
 	}
 }
 

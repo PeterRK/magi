@@ -1,23 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:magi:revision:v25:submit_plan",
+  "$id": "urn:magi:revision:v26:submit_plan",
   "type": "object",
   "properties": {
     "orders": {
       "type": "array",
-      "description": "At most 8 orders per dispatch.",
+      "description": "At most 8 instruction strings per dispatch.",
       "items": {
-        "type": "object",
-        "properties": {
-          "instruction": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "required": [
-          "instruction"
-        ],
-        "additionalProperties": false
+        "type": "string",
+        "minLength": 1
       }
     },
     "memo": {

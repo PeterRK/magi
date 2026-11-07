@@ -1,7 +1,7 @@
 {
   "type": "object",
   "properties": {
-    "ref": {"type": "string", "minLength": 1},
+    "ref": {"type": "string", "minLength": 1, "description": "Known commit or branch. Omit to discover available branches and HEAD."},
     "limit": {"type": "integer", "minimum": 0, "maximum": 50}
   },
   "additionalProperties": false

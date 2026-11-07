@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:magi:revision:v3:history_read",
+  "$id": "urn:magi:revision:v5:history_read",
   "type": "object",
   "properties": {
     "ref": {
       "type": "string",
       "minLength": 1,
-      "description": "Exact numbered U/P/W/R marker already seen in context, such as P1. Read the complete immutable fragment.",
+      "description": "Numbered ref already cited as [[...]] in the current task context, for a body missing there. Do not generate or predict a ref.",
       "pattern": "^[UPWR][1-9][0-9]*$"
     }
   },

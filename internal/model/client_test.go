@@ -47,6 +47,7 @@ func TestFromEnvAndRedirectPolicy(t *testing.T) {
 
 func TestHTTPProjectionAndFragmentedTool(t *testing.T) {
 	request := requestFixture()
+	request.Messages[0].Content += " <T> A&B\u2028\u2029"
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" || r.Header.Get("Authorization") != "Bearer test-secret" {
 			t.Error("incorrect HTTP request")
@@ -55,7 +56,16 @@ func TestHTTPProjectionAndFragmentedTool(t *testing.T) {
 			wireRequest
 			TopP json.RawMessage `json:"top_p"`
 		}
-		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		raw, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Error(err)
+		}
+		for _, escape := range []string{`\u003c`, `\u003e`, `\u0026`, `\u2028`, `\u2029`} {
+			if strings.Contains(string(raw), escape) {
+				t.Errorf("extra escape in HTTP request: %s", escape)
+			}
+		}
+		if err := json.Unmarshal(raw, &body); err != nil {
 			t.Error(err)
 		}
 		if body.Model != modelName || body.Thinking.Type != "enabled" || body.Effort != "high" || len(body.TopP) != 0 || !body.Stream || !body.StreamOptions.IncludeUsage || body.MaxTokens != modelMaxTokens {

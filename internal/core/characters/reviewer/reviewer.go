@@ -3,6 +3,7 @@ package reviewer
 import (
 	"context"
 	"encoding/json"
+	jsonv2 "encoding/json/v2"
 	"errors"
 	"sync"
 
@@ -114,7 +115,7 @@ func (r *Reviewer) Review(ctx context.Context, input Input) (characters.ReviewRe
 			report, callErr := submitReview(ctx, calls[0])
 			var body []byte
 			if callErr == nil {
-				body, _ = json.Marshal(struct {
+				body, _ = jsonv2.Marshal(struct {
 					Status string `json:"status"`
 					Ref    string `json:"ref"`
 				}{Status: "committed", Ref: report.ReviewID})

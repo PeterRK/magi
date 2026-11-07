@@ -37,12 +37,15 @@ of reports and use the user's language for user-facing text. Distinguish workspa
 instructions from choices for one demand.
 
 Refs identify immutable archived bodies: U records exact user input; P, W and R identify
-Planner, Worker and Reviewer records. A ref beside original material identifies that body;
-[[U1]], [[P2]], [[W3]] and [[R4]] are references within later text.
-Use supplied bodies first. For consequential missing detail, history_read takes a seen numbered
-ref such as U1 and returns the archived body. Do not reread a body already available in context.
-Keep useful refs with their purpose; do not invent them or substitute business IDs. A citation
-provides a route, not evidence that the original was read. Later corrections supersede judgments,
+Planner, Worker and Reviewer records. A record's ref names its supplied instruction, memo,
+report, summary or message body; reading it returns that text, not a fuller original.
+Citations within a body lead to other records; history_read does not expand them.
+Use history_read only for a consequential missing body whose ref has already appeared as a
+[[...]] citation in task material or tool results supplied in the current context. Do not
+generate a lookup ref yourself or predict it from numbering. Bare ID fields and instruction
+examples do not qualify as citations. Reuse bodies already supplied directly or returned by
+tools. Keep useful actual refs as [[...]] citations with their purpose. A citation provides
+a route, not evidence that its source body was read. Later corrections supersede judgments,
 not archived bodies.
 
 ## Scope and cost

@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
+	"encoding/json/jsontext"
+	jsonv2 "encoding/json/v2"
 	"fmt"
 	"os"
 	"time"
@@ -29,7 +31,7 @@ func (Observer) DumpContext(ctx context.Context, event string, snapshot []byte) 
 		return
 	}
 
-	raw, err := json.Marshal(struct {
+	raw, err := jsonv2.Marshal(struct {
 		protocol.DiagnosticIdentity
 		Event    string          `json:"event"`
 		Captured time.Time       `json:"captured_at"`
@@ -53,7 +55,7 @@ func (Observer) NotifyReplyRequired() {
 	if dir == "" {
 		return
 	}
-	raw, _ := json.Marshal(struct {
+	raw, _ := jsonv2.Marshal(struct {
 		ID string `json:"id"`
 	}{rand.Text()})
 	if err := writeProbeFile(dir, "reply-request.json", raw); err != nil {
@@ -72,10 +74,10 @@ func (Observer) RecordToolExecution(ctx context.Context, data *protocol.ToolDiag
 	if dir == "" {
 		return
 	}
-	raw, err := json.MarshalIndent(struct {
+	raw, err := jsonv2.Marshal(struct {
 		protocol.DiagnosticIdentity
 		protocol.ToolDiagnostic
-	}{protocol.DiagnosticIdentityFromContext(ctx), *data}, "", "  ")
+	}{protocol.DiagnosticIdentityFromContext(ctx), *data}, jsontext.WithIndent("  "))
 	if err == nil {
 		err = writeCapture(dir, "tools", rand.Text()+".json", raw)
 	}

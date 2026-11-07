@@ -3,7 +3,7 @@ package context
 
 import (
 	"context"
-	"encoding/json"
+	jsonv2 "encoding/json/v2"
 	"fmt"
 	"slices"
 	"sort"
@@ -14,7 +14,7 @@ import (
 
 // Changing these rules invalidates cached message estimates in saved contexts.
 const (
-	contextSnapshotVersion      = 4
+	contextSnapshotVersion      = 5
 	estimatedCharactersPerToken = 4
 	messageFramingTokens        = 4
 )
@@ -28,7 +28,7 @@ type tokenWatermark struct {
 // estimateMessageTokens includes JSON structure, reasoning and message framing.
 // The concrete text envelope always encodes; division leaves room for framing.
 func estimateMessageTokens(message protocol.Message) int {
-	body, _ := json.Marshal(message)
+	body, _ := jsonv2.Marshal(message)
 	size := utf8.RuneCount(body)
 	tokens := size/estimatedCharactersPerToken + min(1, size%estimatedCharactersPerToken)
 	return tokens + messageFramingTokens
@@ -200,7 +200,7 @@ func (c *Context) Save() ([]byte, error) {
 	saved := contextSnapshot{Version: contextSnapshotVersion, CharactersPerToken: estimatedCharactersPerToken,
 		MessageFramingTokens: messageFramingTokens,
 		CompactionConfig:     c.compactionConfig, TokenWatermarks: c.tokenWatermarks, Messages: c.messages, MessageTokens: c.messageTokens}
-	return json.Marshal(saved)
+	return jsonv2.Marshal(saved)
 }
 
 // Restore checks format and cached usage without calling a model. The owning
@@ -210,7 +210,7 @@ func Restore(snapshot []byte, pro bool) (*Context, error) {
 	if err := protocol.UnmarshalJSON(snapshot, &saved); err != nil {
 		return nil, protocol.IntegrityFailure("invalid context snapshot: " + err.Error())
 	}
-	if saved.Version != contextSnapshotVersion || saved.CharactersPerToken != estimatedCharactersPerToken || saved.MessageFramingTokens != messageFramingTokens {
+	if (saved.Version != 4 && saved.Version != contextSnapshotVersion) || saved.CharactersPerToken != estimatedCharactersPerToken || saved.MessageFramingTokens != messageFramingTokens {
 		return nil, protocol.IntegrityFailure("incompatible context snapshot format or token estimate constants")
 	}
 	if err := validateConfig(saved.CompactionConfig); err != nil {
@@ -244,6 +244,12 @@ func Restore(snapshot []byte, pro bool) (*Context, error) {
 			return nil, protocol.IntegrityFailure("invalid saved context watermarks")
 		}
 		previous = point
+	}
+	if saved.Version == 4 {
+		// v4 estimated HTML/JS-escaped JSON; retain measured usage watermarks.
+		for i, message := range saved.Messages {
+			saved.MessageTokens[i] = estimateMessageTokens(message)
+		}
 	}
 	c := &Context{compactionConfig: saved.CompactionConfig, pro: pro,
 		messages: saved.Messages, messageTokens: saved.MessageTokens, tokenWatermarks: saved.TokenWatermarks}

@@ -1,7 +1,7 @@
 package protocol
 
 import (
-	"encoding/json"
+	jsonv2 "encoding/json/v2"
 	"errors"
 	"strings"
 )
@@ -103,7 +103,7 @@ func validateToolCalls(tools []Tool, calls []ToolCall, finishReason string) ([]V
 			}
 			return reject("tool arguments do not satisfy the frozen schema")
 		}
-		canonical, err := json.Marshal(normalizeJSON(value))
+		canonical, err := jsonv2.Marshal(normalizeJSON(value), jsonv2.Deterministic(true))
 		if err != nil {
 			return reject("invalid tool arguments")
 		}
@@ -128,7 +128,7 @@ func (e ToolCallError) Receipt() []byte {
 	if code == "" {
 		code = string(e.Code)
 	}
-	body, _ := json.Marshal(struct {
+	body, _ := jsonv2.Marshal(struct {
 		Error   string `json:"error"`
 		Field   string `json:"field,omitempty"`
 		Message string `json:"message"`

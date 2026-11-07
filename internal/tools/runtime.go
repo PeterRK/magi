@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	jsonv2 "encoding/json/v2"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -125,7 +126,7 @@ func executionStatus(err error) protocol.ToolCallStatus {
 // encodeResult only encodes the fixed-field result structs defined in this package.
 // Preserve each tool's own payload without adding a common envelope.
 func encodeResult(value any, runErr error) (protocol.ToolResult, error) {
-	body, _ := json.Marshal(value)
+	body, _ := jsonv2.Marshal(value)
 	return protocol.ToolResult{Status: executionStatus(runErr), Body: body}, runErr
 }
 

@@ -8,7 +8,8 @@
   "properties": {
     "path": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "description": "Project-relative existing file to edit; required on every call, never inherited from an earlier edit."
     },
     "old_string": {
       "type": "string",

@@ -14,7 +14,7 @@ func TestReviewerFailureDoesNotPublishLiveMemory(t *testing.T) {
 	ctx := context.Background()
 	call := controlCallResponse
 	model := &scriptedModel{lanes: map[string][]protocol.Response{
-		"PLANNER/planner":     {call("submit_plan", `{"orders":[{"instruction":"Implement the change."}],"memo":"Dispatch intent: fulfill the assigned outcomes."}`)},
+		"PLANNER/planner":     {call("submit_plan", `{"orders":["Implement the change."],"memo":"Dispatch intent: fulfill the assigned outcomes."}`)},
 		"PLANNER/interaction": {showStep("Implementing.", false)},
 		"WORKER/worker":       {call("finish_job", `{"report":"Implementation complete."}`)},
 	}}

@@ -1,12 +1,12 @@
-module github.com/peterrk/magi
+module magi
 
-go 1.27.0
+go 1.27
 
 require (
 	charm.land/bubbles/v2 v2.2.1
-	charm.land/bubbletea/v2 v2.1.1
+	charm.land/bubbletea/v2 v2.1.0
 	go.etcd.io/bbolt v1.5.0
-	golang.org/x/sys v0.49.0
+	golang.org/x/sys v0.47.0
 )
 
 require (

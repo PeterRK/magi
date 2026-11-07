@@ -1,7 +1,7 @@
 package characters
 
 import (
-	"encoding/json"
+	jsonv2 "encoding/json/v2"
 
 	"magi/internal/core/protocol"
 )
@@ -12,7 +12,7 @@ type ReviewReport struct {
 }
 
 type WorkOrder struct {
-	OrderID     string              `json:"order_id"`
+	OrderID     string              `json:"ref"`
 	Instruction string              `json:"instruction"`
 	WorkflowID  protocol.WorkflowID `json:"-"`
 }
@@ -48,7 +48,7 @@ func (e WorkflowEntry) Message() protocol.Message { return message("system", e) 
 
 // Only the concrete string message structs above use this encoder.
 func message(role string, value any) protocol.Message {
-	body, err := json.Marshal(value)
+	body, err := jsonv2.Marshal(value)
 	if err != nil {
 		panic(err)
 	}

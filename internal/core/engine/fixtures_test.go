@@ -103,13 +103,9 @@ func (emptyTools) Execute(context.Context, protocol.ToolRequest) (protocol.ToolR
 	return protocol.ToolResult{}, fmt.Errorf("unexpected external tool call")
 }
 
-type plannerOrderDraft struct {
-	Instruction string `json:"instruction"`
-}
-
 type plannerPlanDraft struct {
-	Orders []plannerOrderDraft `json:"orders"`
-	Memo   string              `json:"memo"`
+	Orders []string `json:"orders"`
+	Memo   string   `json:"memo"`
 }
 
 type reviewDraft struct {

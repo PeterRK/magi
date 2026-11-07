@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
+	jsonv2 "encoding/json/v2"
 	"errors"
 	"os"
 	"path/filepath"
@@ -173,7 +173,7 @@ func openMetadata(path string, create bool) (Metadata, error) {
 		return Metadata{}, err
 	}
 	m := Metadata{ProjectID: hex.EncodeToString(id[:]), FormatVersion: protocol.StorageFormatVersion}
-	body, _ := json.Marshal(m)
+	body, _ := jsonv2.Marshal(m)
 	// The containing staging directory is published atomically by openProject.
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {

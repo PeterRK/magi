@@ -31,7 +31,7 @@ func isOutputPath(path string) bool {
 }
 
 // Hold the temporary directory while opening files; never follow links.
-func outputDir(root string) (*os.File, error) {
+func outputDir(root string, create bool) (*os.File, error) {
 	parent, err := os.Open(root)
 	if err != nil {
 		return nil, err
@@ -39,6 +39,28 @@ func outputDir(root string) (*os.File, error) {
 	defer parent.Close()
 
 	fd, err := syscall.Openat(int(parent.Fd()), tempDirectory, syscall.O_RDONLY|syscall.O_DIRECTORY|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0)
+	if errors.Is(err, syscall.ENOENT) && create {
+		// Workers may remove scratch files before reporting. Restore capture for
+		// later calls without clearing any output already created by a sibling.
+		if err := syscall.Mkdirat(int(parent.Fd()), tempDirectory, 0700); err != nil && !errors.Is(err, syscall.EEXIST) {
+			return nil, err
+		}
+		fd, err = syscall.Openat(int(parent.Fd()), tempDirectory, syscall.O_RDONLY|syscall.O_DIRECTORY|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0)
+		if err == nil {
+			dir := os.NewFile(uintptr(fd), tempDirectory)
+			ignoreFD, err := syscall.Openat(fd, ".gitignore", syscall.O_WRONLY|syscall.O_CREAT|syscall.O_EXCL|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0600)
+			if err == nil {
+				ignore := os.NewFile(uintptr(ignoreFD), ".gitignore")
+				_, writeErr := ignore.WriteString("*\n")
+				err = errors.Join(writeErr, ignore.Close())
+			}
+			if err != nil && !errors.Is(err, syscall.EEXIST) {
+				dir.Close()
+				return nil, err
+			}
+			return dir, nil
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +88,7 @@ func createOutput(root, path string) (*os.File, error) {
 	if !isOutputPath(path) {
 		return nil, os.ErrPermission
 	}
-	dir, err := outputDir(root)
+	dir, err := outputDir(root, true)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +101,7 @@ func createOutput(root, path string) (*os.File, error) {
 }
 
 func removeOutput(root, path string) {
-	dir, err := outputDir(root)
+	dir, err := outputDir(root, false)
 	if err != nil {
 		return
 	}

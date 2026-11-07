@@ -2,7 +2,7 @@ package worker
 
 import (
 	"context"
-	"encoding/json"
+	jsonv2 "encoding/json/v2"
 	"errors"
 	"sync"
 
@@ -92,7 +92,7 @@ func interruptedToolResult(cause error) []byte {
 	if errors.Is(cause, context.DeadlineExceeded) {
 		status = protocol.ToolTimedOut
 	}
-	body, _ := json.Marshal(struct {
+	body, _ := jsonv2.Marshal(struct {
 		Status     protocol.ToolCallStatus `json:"status"`
 		Diagnostic string                  `json:"diagnostic"`
 	}{status, cause.Error()})

@@ -75,7 +75,7 @@ func (modelFunc) InputCapacity() int { return 23552 }
 
 func planResponse(value plannerPlanDraft) protocol.Response {
 	if value.Orders == nil {
-		value.Orders = []plannerOrderDraft{}
+		value.Orders = []string{}
 	}
 	if len(value.Orders) != 0 && value.Memo == "" {
 		value.Memo = "Dispatch intent: fulfill the assigned outcomes."

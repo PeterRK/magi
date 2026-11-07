@@ -3,6 +3,7 @@ package planner
 import (
 	"context"
 	"encoding/json"
+	jsonv2 "encoding/json/v2"
 	"io"
 
 	"magi/internal/core/characters"
@@ -175,11 +176,11 @@ func (i *interaction) replyRefs() []string {
 func (entry dialogueEntry) message() protocol.Message {
 	var body []byte
 	if entry.ref == "" {
-		body, _ = json.Marshal(struct {
+		body, _ = jsonv2.Marshal(struct {
 			ShowUser string `json:"show_user"`
 		}{entry.text})
 	} else {
-		body, _ = json.Marshal(struct {
+		body, _ = jsonv2.Marshal(struct {
 			Ref     string `json:"ref"`
 			Message string `json:"message"`
 		}{entry.ref, entry.text})

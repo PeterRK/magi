@@ -2,7 +2,7 @@ package tools
 
 import (
 	"encoding/base64"
-	"encoding/json"
+	jsonv2 "encoding/json/v2"
 	"fmt"
 	"strconv"
 	"strings"
@@ -49,7 +49,7 @@ func bashOutcome(raw processResult, limit int, runErr error) (protocol.ToolResul
 		}
 	}
 	result.Diagnostic = diagnostic
-	body, _ := json.Marshal(result)
+	body, _ := jsonv2.Marshal(result)
 	return protocol.ToolResult{Status: status, Body: body}, runErr
 }
 

@@ -3,7 +3,8 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/jsontext"
+	jsonv2 "encoding/json/v2"
 	"errors"
 	"flag"
 	"fmt"
@@ -86,9 +87,12 @@ func (r *Runner) Run(ctx context.Context, args []string) (returnErr error) {
 }
 
 func writeJSON(w io.Writer, value any) error {
-	encoder := json.NewEncoder(w)
-	encoder.SetIndent("", "  ")
-	return encoder.Encode(value)
+	body, err := jsonv2.Marshal(value, jsontext.WithIndent("  "))
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(append(body, '\n'))
+	return err
 }
 func Main(args []string) int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

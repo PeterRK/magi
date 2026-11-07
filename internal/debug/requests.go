@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"encoding/json/jsontext"
+	jsonv2 "encoding/json/v2"
 	"errors"
 	"io"
 	"net"
@@ -33,7 +35,7 @@ type requestMetadata struct {
 }
 
 func saveMetadata(dir string, meta *requestMetadata) error {
-	raw, err := json.MarshalIndent(meta, "", "  ")
+	raw, err := jsonv2.Marshal(meta, jsontext.WithIndent("  "))
 	if err != nil {
 		return errCapture
 	}
@@ -130,7 +132,7 @@ func (Observer) RecordModelRequest(ctx context.Context, diagnostic *protocol.Req
 	}
 	// Partial streams and HTTP error bodies are not usable parsed responses.
 	if result.FinishReason != "" && protocol.ValidateResponse(*result) == nil {
-		raw, err := json.Marshal(result)
+		raw, err := jsonv2.Marshal(result)
 		if err == nil {
 			err = writeCapture(dir, "responses", diagnostic.CallID+".json", raw)
 		}

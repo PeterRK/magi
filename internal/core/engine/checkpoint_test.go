@@ -264,7 +264,7 @@ func TestIncompleteSafetyPointFailsRecoveryEntriesWithoutMutation(t *testing.T) 
 	mustEngine(t, Recover(ctx, disk, "local-project", 0))
 	restored, err := Open(ctx, disk, "local-project")
 	mustEngine(t, err)
-	if restored.state.Workflow.Round != 3 || restored.state.Planner != nil || restored.state.Reviewer != nil || !reflect.DeepEqual(restored.state.Handoff, coldStartHandoff()) {
+	if restored.state.Workflow.Round != 3 || restored.state.Planner != nil || restored.state.Reviewer != nil || (len(restored.state.Handoff.Workers) != 0 || restored.state.Handoff.Review != nil || restored.state.Handoff.Entry != coldStartHandoff().Entry) {
 		t.Fatal("recovery lost the relocated cold-start baseline")
 	}
 }

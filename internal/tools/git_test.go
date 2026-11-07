@@ -47,6 +47,38 @@ func writeGitFile(t *testing.T, root, path, text string) {
 	noError(t, os.WriteFile(filepath.Join(root, path), []byte(text), 0600))
 }
 
+func TestGitQueriesRecoverAfterWorkerScratchCleanup(t *testing.T) {
+	for _, name := range []string{"git_log", "git_diff", "git_status"} {
+		t.Run(name, func(t *testing.T) {
+			root := t.TempDir()
+			testGit(t, root, "init", "-b", "main")
+			writeGitFile(t, root, "a.txt", "delivered\n")
+			testGit(t, root, "add", "a.txt")
+			testGit(t, root, "commit", "-m", "delivery")
+			runtime, err := NewRuntime(root, ExecutablePaths{})
+			noError(t, err)
+			noError(t, runtime.PrepareRound(context.Background()))
+			_, err = runtime.Execute(context.Background(), protocol.ToolRequest{
+				ID: "cleanup", Name: "bash", Arguments: json.RawMessage(`{"command":"rm -rf .magi-temp"}`),
+			})
+			noError(t, err)
+			var args any = struct{}{}
+			if name == "git_diff" {
+				args = gitDiffArgs{Ref: "HEAD"}
+			}
+			result := gitTool(t, runtime, name, args)
+			if result.Content == "" || result.Diagnostic != "" {
+				t.Fatalf("query lost output after scratch cleanup: %+v", result)
+			}
+			ignore, err := os.ReadFile(filepath.Join(root, tempDirectory, ".gitignore"))
+			noError(t, err)
+			if string(ignore) != "*\n" {
+				t.Fatalf("restored scratch directory is not ignored: %q", ignore)
+			}
+		})
+	}
+}
+
 func TestGitHistoryDiffAndStatus(t *testing.T) {
 	root := t.TempDir()
 	testGit(t, root, "init", "-b", "main")
@@ -212,6 +244,9 @@ func TestGitQueriesDisableProgramsAndBoundOutput(t *testing.T) {
 		t.Fatal("incomplete dump was not disclosed", diff.Diagnostic)
 	}
 	noError(t, os.RemoveAll(filepath.Join(root, tempDirectory)))
+	// A missing directory is recoverable; a non-directory remains a real
+	// capture failure and must not be replaced or hide lost output.
+	noError(t, os.WriteFile(filepath.Join(root, tempDirectory), []byte("not a directory"), 0600))
 	failed, failure := runtime.Execute(context.Background(), protocol.ToolRequest{ID: "missing-output", Name: "git_diff", Arguments: json.RawMessage(`{"ref":"HEAD"}`)})
 	if failure == nil || failed.Status != protocol.ToolFailed || !strings.Contains(string(failed.Body), "unavailable") {
 		t.Fatal("dump failure was not reported", string(failed.Body), failure)

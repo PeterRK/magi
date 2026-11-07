@@ -4,7 +4,7 @@ package model
 
 import (
 	"context"
-	"encoding/json"
+	jsonv2 "encoding/json/v2"
 	"errors"
 	"net/http"
 	"os"
@@ -94,7 +94,7 @@ func (c *client) Invoke(ctx context.Context, request protocol.Request) (result p
 		body.MaxTokens = modelLongMaxTokens
 	}
 	body.StreamOptions.IncludeUsage = true
-	encoded, err := json.Marshal(body)
+	encoded, err := jsonv2.Marshal(body)
 	if err != nil {
 		return protocol.Response{}, err
 	}
@@ -129,7 +129,7 @@ func (c *client) Invoke(ctx context.Context, request protocol.Request) (result p
 			default:
 				body.Effort = "low"
 			}
-			encoded, err = json.Marshal(body)
+			encoded, err = jsonv2.Marshal(body)
 			if err != nil {
 				return protocol.Response{}, err
 			}

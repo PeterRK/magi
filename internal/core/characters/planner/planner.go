@@ -3,6 +3,7 @@ package planner
 import (
 	"context"
 	"encoding/json"
+	jsonv2 "encoding/json/v2"
 	"fmt"
 	"strings"
 
@@ -54,13 +55,9 @@ type Baseline struct {
 	Round uint64
 }
 
-type orderDraft struct {
-	Instruction string `json:"instruction"`
-}
-
 type planDraft struct {
-	Orders []orderDraft `json:"orders"`
-	Memo   string       `json:"memo"`
+	Orders []string `json:"orders"`
+	Memo   string   `json:"memo"`
 }
 
 // Plan advances the main Context directly. Engine snapshots isolate accepted
@@ -168,13 +165,13 @@ func submitPlan(ctx context.Context, workflow protocol.WorkflowID, call protocol
 	}
 	plan := Plan{Orders: make([]characters.WorkOrder, len(draft.Orders))}
 	for i, item := range draft.Orders {
-		ref, err := characters.CacheHistoryOutput(ctx, protocol.RolePlanner, item.Instruction)
+		ref, err := characters.CacheHistoryOutput(ctx, protocol.RolePlanner, item)
 		if err != nil {
 			return Plan{}, err
 		}
 		plan.Orders[i] = characters.WorkOrder{
 			WorkflowID: workflow, OrderID: ref,
-			Instruction: item.Instruction,
+			Instruction: item,
 		}
 	}
 	if strings.TrimSpace(draft.Memo) != "" {
@@ -197,7 +194,7 @@ const (
 // causing concurrent Workers to repeat work and interfere with each other.
 // Check this dispatch, including investigation orders, before publishing any orders;
 // reject the whole draft so Planner can resolve overlap and resubmit it.
-func validateOrders(orders []orderDraft) error {
+func validateOrders(orders []string) error {
 	if len(orders) > maxOrdersPerDispatch {
 		return protocol.InvalidCandidate(fmt.Sprintf("dispatch permits at most %d orders; reduce the number of orders", maxOrdersPerDispatch))
 	}
@@ -206,11 +203,11 @@ func validateOrders(orders []orderDraft) error {
 	}
 	instructions := make([]string, len(orders))
 	for i, order := range orders {
-		text := strings.ReplaceAll(order.Instruction, "\r\n", "\n")
+		text := strings.ReplaceAll(order, "\r\n", "\n")
 		instructions[i] = strings.TrimSpace(strings.ReplaceAll(text, "\r", "\n"))
 		for j := range i {
 			if instructions[i] == instructions[j] {
-				return protocol.InvalidCandidate(fmt.Sprintf("orders[%d].instruction and orders[%d].instruction are duplicates; merge overlapping work or give each order distinct outcomes, then resubmit the complete plan", j, i))
+				return protocol.InvalidCandidate(fmt.Sprintf("orders[%d] and orders[%d] are duplicates; merge overlapping work or give each order distinct outcomes, then resubmit the complete plan", j, i))
 			}
 		}
 	}
@@ -235,7 +232,7 @@ func validateOrders(orders []orderDraft) error {
 			}
 			similarity := float64(intersection) / float64(len(a)+len(b)-intersection)
 			if similarity >= similarityThreshold {
-				return protocol.InvalidCandidate(fmt.Sprintf("orders[%d].instruction and orders[%d].instruction are near-duplicates (%d-character Jaccard %.4f >= %.2f); merge overlapping work or give each order distinct outcomes, then resubmit the complete plan", j, i, orderNGramSize, similarity, similarityThreshold))
+				return protocol.InvalidCandidate(fmt.Sprintf("orders[%d] and orders[%d] are near-duplicates (%d-character Jaccard %.4f >= %.2f); merge overlapping work or give each order distinct outcomes, then resubmit the complete plan", j, i, orderNGramSize, similarity, similarityThreshold))
 			}
 		}
 	}
@@ -267,7 +264,7 @@ func acknowledgment(plan Plan) []byte {
 	if plan.Memo != nil {
 		ref = plan.Memo.MemoID
 	}
-	body, _ := json.Marshal(struct {
+	body, _ := jsonv2.Marshal(struct {
 		Ref      string   `json:"ref,omitempty"`
 		Status   string   `json:"status"`
 		OrderIDs []string `json:"order_ids,omitempty"`

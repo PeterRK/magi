@@ -22,7 +22,7 @@ func TestValidateOrders(t *testing.T) {
 		{"short distinct", []string{"甲乙丙", "甲乙丁"}, ""},
 		{"at limit", limitOrders[:8], ""},
 		{"above limit", limitOrders, "at most 8 orders"},
-		{"exact", []string{"A separate order", "Implement response cleanup", "Implement response cleanup"}, "orders[1].instruction and orders[2].instruction are duplicates"},
+		{"exact", []string{"A separate order", "Implement response cleanup", "Implement response cleanup"}, "orders[1] and orders[2] are duplicates"},
 		{"normalized", []string{" \r\n核对\r\n结果\r", "核对\n结果"}, "are duplicates"},
 		{"short duplicate", []string{"abc", "abc"}, "are duplicates"},
 		{"near English", []string{shared + "Validate cleanup.", shared + "Verify response closure and error propagation."}, ">= 0.80"},
@@ -30,11 +30,7 @@ func TestValidateOrders(t *testing.T) {
 		{"near Unicode", []string{unicodeSource.String(), strings.Replace(unicodeSource.String(), "且", "替", 1)}, "4-character Jaccard"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			orders := make([]orderDraft, len(tc.instructions))
-			for i, instruction := range tc.instructions {
-				orders[i] = orderDraft{Instruction: instruction}
-			}
-			err := validateOrders(orders)
+			err := validateOrders(tc.instructions)
 			if tc.feedback == "" {
 				if err != nil {
 					t.Fatal("independent orders rejected", err)

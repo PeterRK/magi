@@ -35,7 +35,7 @@ func workflowModel(t *testing.T) protocol.Model {
 	model := newScriptedModel(map[string][]protocol.Response{
 		"PLANNER/planner": {
 			controlCallResponse("submit_plan", `{"orders":[],"memo":""}`),
-			controlCallResponse("submit_plan", `{"orders":[{"instruction":"Implement the reviewed user request."}],"memo":"Dispatch intent: fulfill the assigned outcomes."}`),
+			controlCallResponse("submit_plan", `{"orders":["Implement the reviewed user request."],"memo":"Dispatch intent: fulfill the assigned outcomes."}`),
 			controlCallResponse("submit_plan", `{"orders":[],"memo":""}`),
 		},
 		"PLANNER/interaction": {

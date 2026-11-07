@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"encoding/json"
+	jsonv2 "encoding/json/v2"
 	"fmt"
 	"math"
 	"unicode/utf8"
@@ -37,7 +38,7 @@ func (s snapshot) MarshalJSON() ([]byte, error) {
 		}
 	}
 	type fields snapshot
-	return json.Marshal(struct {
+	return jsonv2.Marshal(struct {
 		*fields
 		Planner  json.RawMessage `json:"planner"`
 		Reviewer json.RawMessage `json:"reviewer"`
@@ -205,7 +206,7 @@ func (s *State) publish(ctx context.Context, number uint64) error {
 // publishSnapshot writes a complete baseline using only this store's backend.
 // Recovery uses it without touching active role memories or history.
 func (s *State) publishSnapshot(ctx context.Context, number uint64) error {
-	body, err := json.Marshal(s.state)
+	body, err := jsonv2.Marshal(s.state)
 	if err != nil {
 		return err
 	}

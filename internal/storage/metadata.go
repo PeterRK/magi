@@ -3,6 +3,7 @@ package storage
 import (
 	"encoding/binary"
 	"encoding/json"
+	jsonv2 "encoding/json/v2"
 	"math"
 	"time"
 
@@ -117,7 +118,7 @@ func readRole(tx *bolt.Tx, key []byte) (roleRecord, error) {
 }
 
 func putRole(tx *bolt.Tx, key []byte, r roleRecord) error {
-	body, _ := json.Marshal(r)
+	body, _ := jsonv2.Marshal(r)
 	return tx.Bucket(projectBucket).Put(key, body)
 }
 
@@ -161,7 +162,7 @@ func readRound(key, body []byte) (protocol.StoredRound, error) {
 }
 
 func putRound(tx *bolt.Tx, r protocol.StoredRound) error {
-	body, err := json.Marshal(roundRecord{Hash: r.Hash, CommittedAt: r.CommittedAt, Dormant: r.Dormant})
+	body, err := jsonv2.Marshal(roundRecord{Hash: r.Hash, CommittedAt: r.CommittedAt, Dormant: r.Dormant})
 	if err != nil {
 		return err
 	}

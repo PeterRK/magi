@@ -363,7 +363,7 @@ func TestSnapshotPreservesCachedTokensAndMeasuredSuffix(t *testing.T) {
 		t.Fatal("restore accepted missing compaction limit")
 	}
 	saved.CompactionConfig = c.compactionConfig
-	saved.Version--
+	saved.Version = 3
 	incompatibleVersion, err := json.Marshal(saved)
 	if err != nil {
 		t.Fatal(err)
@@ -407,3 +407,39 @@ func (f contextModelFunc) Invoke(ctx context.Context, r protocol.Request) (proto
 	return f(ctx, r)
 }
 func (contextModelFunc) InputCapacity() int { return 23552 }
+
+func TestRestoreV4ReestimatesEscapedMessagesAndRetainsMeasurements(t *testing.T) {
+	c := newTestContext(t, []protocol.Message{{Role: "system", Content: "<head>"}}, testCompactionConfig(1), nil)
+	c.recordInputTokens(100)
+	if err := c.Append(context.Background(), protocol.Message{Role: "user", Content: "<T> A&B"}); err != nil {
+		t.Fatal(err)
+	}
+	body, err := c.Save()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var saved contextSnapshot
+	if err = json.Unmarshal(body, &saved); err != nil {
+		t.Fatal(err)
+	}
+	saved.Version = 4
+	for i, message := range saved.Messages {
+		legacy, err := json.Marshal(message)
+		if err != nil {
+			t.Fatal(err)
+		}
+		size := len([]rune(string(legacy)))
+		saved.MessageTokens[i] = (size+3)/4 + messageFramingTokens
+	}
+	body, err = json.Marshal(saved)
+	if err != nil {
+		t.Fatal(err)
+	}
+	restored, err := Restore(body, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(restored.messageTokens, c.messageTokens) || !reflect.DeepEqual(restored.tokenWatermarks, c.tokenWatermarks) || restored.totalTokens != c.totalTokens {
+		t.Fatal("legacy estimates or measured usage were not migrated correctly")
+	}
+}

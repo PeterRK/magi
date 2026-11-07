@@ -163,7 +163,7 @@ func TestPlannerReturnsOrderPRefsInSubmittedSequence(t *testing.T) {
 			t.Fatal("planning must use the ordinary output tier")
 		}
 		if calls == 1 {
-			return modelResponse(toolCall("empty-memo", "submit_plan", `{"orders":[{"instruction":"First work."}],"memo":" "}`)), nil
+			return modelResponse(toolCall("empty-memo", "submit_plan", `{"orders":["First work."],"memo":" "}`)), nil
 		}
 		if calls != 2 || !strings.Contains(request.Messages[len(request.Messages)-1].Content, "nonempty memo") {
 			t.Fatal("dispatch without memo was not rejected")
@@ -171,7 +171,7 @@ func TestPlannerReturnsOrderPRefsInSubmittedSequence(t *testing.T) {
 		if _, err := readHistory("P2"); err == nil {
 			t.Fatal("rejected dispatch allocated an order ref")
 		}
-		return modelResponse(toolCall("plan", "submit_plan", `{"orders":[{"instruction":"First work."},{"instruction":"Second work."}],"memo":"Dispatch intent: fulfill the assigned outcomes."}`)), nil
+		return modelResponse(toolCall("plan", "submit_plan", `{"orders":["First work.","Second work."],"memo":"Dispatch intent: fulfill the assigned outcomes."}`)), nil
 	}))
 	planner := &plannerrole.Planner{}
 	plan, err := planner.Plan(ctx, plannerrole.Input{State: plannerrole.Baseline{ID: "task", Round: 1}})
@@ -285,7 +285,7 @@ func TestInteractionInheritsCompactedMainMemory(t *testing.T) {
 			reasoning := ""
 			return protocol.Response{Message: protocol.Message{Role: "assistant", Content: "Known planning state.", ReasoningContent: &reasoning}, FinishReason: "stop"}, nil
 		case 3:
-			if len(request.Messages) != 3 || request.Messages[0].Content != "inherited fixed prefix" || messageField(request.Messages[1].Content, "context_summary") != "Known planning state." || messageField(request.Messages[2].Content, "phase") != "TEMPORARY_INTERACTION" {
+			if len(request.Messages) != 3 || request.Messages[0].Content != "inherited fixed prefix" || request.Messages[1].Content != "Known planning state." || messageField(request.Messages[2].Content, "phase") != "TEMPORARY_INTERACTION" {
 				t.Fatal("dialogue did not inherit the compacted main memory", request.Messages)
 			}
 			inherited = request.Messages[:2]
@@ -553,7 +553,7 @@ func TestPlannerRejectsInvalidDispatchBeforeArchiving(t *testing.T) {
 	bindModel(modelFunc(func(_ context.Context, request characters.InvocationRequest) (protocol.Response, error) {
 		calls++
 		if calls == 1 {
-			return modelResponse(toolCall("duplicate", "submit_plan", `{"orders":[{"instruction":"Implement cleanup"},{"instruction":"Implement cleanup"}],"memo":"Dispatch intent."}`)), nil
+			return modelResponse(toolCall("duplicate", "submit_plan", `{"orders":["Implement cleanup","Implement cleanup"],"memo":"Dispatch intent."}`)), nil
 		}
 		if calls != 2 || !strings.Contains(messageField(request.Messages[len(request.Messages)-1].Content, "message"), "are duplicates") {
 			t.Fatal("invalid dispatch did not receive repair feedback")
@@ -561,7 +561,7 @@ func TestPlannerRejectsInvalidDispatchBeforeArchiving(t *testing.T) {
 		if _, err := readHistory("P1"); err == nil {
 			t.Fatal("rejected dispatch allocated history")
 		}
-		return modelResponse(toolCall("repaired", "submit_plan", `{"orders":[{"instruction":"Implement cleanup"}],"memo":"Focused dispatch."}`)), nil
+		return modelResponse(toolCall("repaired", "submit_plan", `{"orders":["Implement cleanup"],"memo":"Focused dispatch."}`)), nil
 	}))
 	plan, err := (&plannerrole.Planner{}).Plan(context.Background(), plannerrole.Input{State: plannerrole.Baseline{ID: "task", Round: 1}})
 	noError(t, err)

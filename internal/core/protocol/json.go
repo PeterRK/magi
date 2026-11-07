@@ -17,7 +17,7 @@ import (
 
 // Retain exact number spellings instead of v2's default float64 conversion.
 // All other values use v2's strict decoder, including duplicate names, UTF-8,
-// surrogate pairs and trailing input. Serialization remains unchanged.
+// surrogate pairs and trailing input.
 var exactJSONNumbers = jsonv2.WithUnmarshalers(jsonv2.UnmarshalFromFunc(func(d *jsontext.Decoder, value *any) error {
 	if d.PeekKind() != '0' {
 		return errors.ErrUnsupported
@@ -247,7 +247,7 @@ func schemaJSONPath(rule map[string]any, pointer jsontext.Pointer) string {
 }
 
 func schemaValueHint(label string, value any) string {
-	if body, err := json.Marshal(value); err == nil && len(body) <= 160 {
+	if body, err := jsonv2.Marshal(value); err == nil && len(body) <= 160 {
 		return "; " + label + ": " + string(body)
 	}
 	return "; see the tool schema for " + label

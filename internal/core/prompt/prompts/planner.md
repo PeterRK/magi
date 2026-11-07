@@ -44,7 +44,7 @@ Arrange needed work and keep remaining plans in memo without replaying unchanged
 
 ### Assess findings and resolve disagreements before dispatch
 
-Match Worker reports (W) to orders through order_id. Treat uncontradicted accounts of concrete
+Match each Worker report's order_id to its order's ref. Treat uncontradicted accounts of concrete
 actions as reported facts, while independently judging fulfillment. Reviewer reports (R) bring
 findings and unresolved doubts; they do not control dispatch or closure.
 

@@ -44,7 +44,7 @@ each other and memo's arrangements for contradictions, overlapping writes or unf
 dependencies; faithful execution cannot make an inadequate order sufficient.
 
 Use historical assignments and their reported results, current orders and memo. Match Worker
-reports to their orders through order_id. memo records Planner's dispatch intent, work not yet
+reports' order_id to their orders' ref. memo records Planner's dispatch intent, work not yet
 assigned, anticipated risks and pending decisions or discussion. user_input is Planner's summary
 of this round's user dialogue, with U sources for original wording and necessary dialogue context.
 These planning and input summaries do not dispatch work, change the demand or prove fulfillment.

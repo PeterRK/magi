@@ -144,7 +144,7 @@ func TestHandoffMessageFields(t *testing.T) {
 		role    string
 		fields  map[string]any
 	}{
-		{(WorkOrder{OrderID: "P1", WorkflowID: "task", Instruction: text}).Message(), "user", map[string]any{"order_id": "P1", "instruction": text}},
+		{(WorkOrder{OrderID: "P1", WorkflowID: "task", Instruction: text}).Message(), "user", map[string]any{"ref": "P1", "instruction": text}},
 		{(WorkflowEntry{Mode: "COLD_START"}).Message(), "system", map[string]any{"workflow_entry": "COLD_START"}},
 		{(PlannerMemo{MemoID: "P1", Body: text}).Message(), "user", map[string]any{"ref": "P1", "memo": text}},
 		{(UserInput{InputID: "P2", Body: text}).Message(), "user", map[string]any{"ref": "P2", "user_input": text}},
