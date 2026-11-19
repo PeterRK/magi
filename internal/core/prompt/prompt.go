@@ -13,7 +13,7 @@ var promptFiles embed.FS
 // Version identifies the embedded role instructions. Change it
 // whenever those instructions or their model-visible tool guidance change.
 // An explicitly requested rollback restores the baseline version.
-const Version = "magi-native-v381"
+const Version = "magi-native-v412"
 
 func rolePrompt(purpose string) (string, error) {
 	name := purpose

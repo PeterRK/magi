@@ -29,6 +29,8 @@ func (o observationFuncs) RecordModelRequest(ctx context.Context, data *protocol
 		o.finished(ctx, data, response, err)
 	}
 }
+func (o observationFuncs) RecordModelOutputError(context.Context, *protocol.Request, *protocol.Response, error) {
+}
 func (observationFuncs) NotifyReplyRequired()                                          {}
 func (observationFuncs) RecordToolExecution(context.Context, *protocol.ToolDiagnostic) {}
 func (observationFuncs) DumpContext(context.Context, string, []byte)                   {}

@@ -34,8 +34,56 @@ func (diagnosticObservation) NotifyReplyRequired() {}
 func (diagnosticObservation) BeforeModelRequest(context.Context, string, []byte) error { return nil }
 func (diagnosticObservation) RecordModelRequest(context.Context, *protocol.RequestDiagnostic, *protocol.Response, error) {
 }
+func (diagnosticObservation) RecordModelOutputError(context.Context, *protocol.Request, *protocol.Response, error) {
+}
 func (diagnosticObservation) RecordToolExecution(context.Context, *protocol.ToolDiagnostic) {}
 func (diagnosticObservation) DumpContext(context.Context, string, []byte)                   {}
+
+type rejectedOutputObservation struct {
+	diagnosticObservation
+	rejected func(context.Context, *protocol.Request, *protocol.Response, error)
+}
+
+func (o rejectedOutputObservation) RecordModelOutputError(ctx context.Context, input *protocol.Request, response *protocol.Response, err error) {
+	o.rejected(ctx, input, response, err)
+}
+
+func TestRejectedOutputObservationPreservesUsageAndValidation(t *testing.T) {
+	isolateBindings(t)
+	accounting := &observedUsage{}
+	protocol.Storage = accounting
+	observed, calls := 0, 0
+	protocol.Observer = rejectedOutputObservation{rejected: func(ctx context.Context, input *protocol.Request, response *protocol.Response, err error) {
+		observed++
+		identity := protocol.DiagnosticIdentityFromContext(ctx)
+		if identity.InvocationID == "" || identity.SessionID == "" || len(input.Tools) != 2 || response.Message.Content != "Delivered effects; one check unverified." || err == nil {
+			t.Fatal("invalid rejected-output notification", identity, response, err)
+		}
+	}}
+	ctx, window, owner := invocationFixture(t, context.Background(), func(context.Context, protocol.Request) (protocol.Response, error) {
+		calls++
+		response := scopeResponse("call", `{"ref":"P1"}`)
+		if calls == 1 {
+			response.Message.ToolCalls = nil
+			response.Message.Content = "Delivered effects; one check unverified."
+			response.FinishReason = "stop"
+		}
+		return response, nil
+	})
+	if _, err := window.CallModel(ctx, owner.Request); err != nil {
+		t.Fatal(err)
+	}
+	record := CurrentInvocation(ctx)
+	if _, err := record.Batch(); err == nil || observed != 1 || accounting.calls != 1 || record.errorStreak != 1 {
+		t.Fatal("observation changed rejection or settlement", err, observed, accounting, record.errorStreak)
+	}
+	if _, err := window.CallModel(ctx, owner.Request); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := record.Batch(); err != nil || observed != 1 || accounting.calls != 2 || accounting.count.Output != 4 || record.errorStreak != 0 {
+		t.Fatal("observation captured valid output or changed recovery", err, observed, accounting)
+	}
+}
 
 func TestDiagnosticIdentityIsOptIn(t *testing.T) {
 	for _, mode := range []string{"off", "on"} {
@@ -326,6 +374,13 @@ func TestFullPreservesPendingReceiptsAndOwnerUsage(t *testing.T) {
 			isolateBindings(t)
 			accounting := &observedUsage{}
 			protocol.Storage = accounting
+			rejected := 0
+			protocol.Observer = rejectedOutputObservation{rejected: func(ctx context.Context, input *protocol.Request, response *protocol.Response, err error) {
+				rejected++
+				if !corecontext.IsCompacting(ctx) || len(input.Tools) != 0 || response.Message.Content != tc.summary || err == nil {
+					t.Fatal("invalid Full rejection observation")
+				}
+			}}
 			ctx, ordinary, owner := invocationFixture(t, context.Background(), func(ctx context.Context, request protocol.Request) (protocol.Response, error) {
 				if !corecontext.IsCompacting(ctx) {
 					return scopeResponse("pending", `{"ref":"P1"}`), nil
@@ -368,6 +423,9 @@ func TestFullPreservesPendingReceiptsAndOwnerUsage(t *testing.T) {
 			}
 			if accounting.calls != 2 || accounting.count.Output != 4 {
 				t.Fatal("Full lost or duplicated owner usage", accounting)
+			}
+			if (rejected == 1) != tc.wantFailure {
+				t.Fatal("Full rejection was lost or valid output was captured", rejected)
 			}
 		})
 	}

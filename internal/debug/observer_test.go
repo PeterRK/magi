@@ -54,6 +54,46 @@ func fixtureResponse() *protocol.Response {
 
 const fixtureRequest = `{"model":"fixture","thinking":{"type":"enabled"},"reasoning_effort":"high","max_tokens":1024,"messages":[{"role":"user","content":"private request"}]}`
 
+func TestRejectedOutputsRetainEvidenceWithoutMinimalInputHistory(t *testing.T) {
+	for _, mode := range []string{"minimal", "full"} {
+		t.Run(mode, func(t *testing.T) {
+			dir := enableProbe(t, mode, "")
+			input := protocol.Request{Messages: []protocol.Message{{Role: "user", Content: "private input sentinel"}},
+				Tools: []protocol.Tool{{Function: protocol.Function{Name: "finish_job"}}}, Effort: protocol.EffortLow, LongOutput: true}
+			response := fixtureResponse()
+			(Observer{}).RecordModelOutputError(probeContext("worker:P1"), &input, response, errors.New("tool call required"))
+			paths, err := filepath.Glob(filepath.Join(dir, "worker:P1", "invalid-responses", "*.json"))
+			noError(t, err)
+			if len(paths) != 1 {
+				t.Fatal("missing rejected response", paths)
+			}
+			raw, err := os.ReadFile(paths[0])
+			noError(t, err)
+			var saved struct {
+				protocol.DiagnosticIdentity
+				Response protocol.Response `json:"response"`
+				Error    string            `json:"validation_error"`
+				Effort   string            `json:"requested_effort"`
+				Count    int               `json:"message_count"`
+				Tools    []string          `json:"allowed_tools"`
+				Request  json.RawMessage   `json:"request"`
+			}
+			noError(t, json.Unmarshal(raw, &saved))
+			if saved.InvocationID != "invocation" || saved.SessionID != "worker:P1" || saved.Response.Message.Content != response.Message.Content || saved.Response.FinishReason != "stop" || saved.Response.Usage != response.Usage || saved.Error != "tool call required" || saved.Effort != "low" || saved.Count != 1 || len(saved.Tools) != 1 || saved.Tools[0] != "finish_job" {
+				t.Fatal("rejected response lost evidence", string(raw))
+			}
+			if (len(saved.Request) > 0) != (mode == "full") || strings.Contains(string(raw), "private input sentinel") != (mode == "full") {
+				t.Fatal("wrong input capture scope", string(raw))
+			}
+			info, err := os.Stat(paths[0])
+			noError(t, err)
+			if info.Mode().Perm() != 0600 {
+				t.Fatal("rejected response is not private")
+			}
+		})
+	}
+}
+
 func TestBaseCaptureAndFullRequestRecords(t *testing.T) {
 	for _, mode := range []string{"minimal", "full"} {
 		t.Run(mode, func(t *testing.T) {
@@ -329,10 +369,12 @@ func TestCaptureDisabledAndInvalidDirectory(t *testing.T) {
 	t.Setenv("MAGI_DEBUG_API_DIR", "")
 	t.Setenv("MAGI_DEBUG_API_PAUSE", "invalid")
 	noError(t, (Observer{}).BeforeModelRequest(context.Background(), "call", []byte(fixtureRequest)))
+	(Observer{}).RecordModelOutputError(context.Background(), &protocol.Request{}, fixtureResponse(), errors.New("invalid output"))
 	t.Setenv("MAGI_DEBUG_API_DIR", "relative")
 	if err := (Observer{}).BeforeModelRequest(context.Background(), "call", []byte(fixtureRequest)); err == nil {
 		t.Fatal("explicit pause setup error was ignored")
 	}
 	t.Setenv("MAGI_DEBUG_API_PAUSE", "")
 	noError(t, (Observer{}).BeforeModelRequest(context.Background(), "call", []byte(fixtureRequest)))
+	(Observer{}).RecordModelOutputError(context.Background(), &protocol.Request{}, fixtureResponse(), errors.New("invalid output"))
 }

@@ -120,6 +120,9 @@ func (record *Invocation) callModel(callCtx context.Context, input protocol.Requ
 	} else {
 		calls, batchErr = validateBatch(input.Tools, response)
 	}
+	if batchErr != nil && protocol.Observer != nil {
+		protocol.Observer.RecordModelOutputError(callCtx, &input, &response, batchErr)
+	}
 	if err := observeUsage(record.owner.Role, response.Usage, response.TokenDetails); err != nil {
 		return response, err
 	}

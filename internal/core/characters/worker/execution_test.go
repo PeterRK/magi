@@ -74,6 +74,8 @@ func (checkpointObservation) NotifyReplyRequired() {}
 func (checkpointObservation) BeforeModelRequest(context.Context, string, []byte) error { return nil }
 func (checkpointObservation) RecordModelRequest(context.Context, *protocol.RequestDiagnostic, *protocol.Response, error) {
 }
+func (checkpointObservation) RecordModelOutputError(context.Context, *protocol.Request, *protocol.Response, error) {
+}
 func (checkpointObservation) RecordToolExecution(context.Context, *protocol.ToolDiagnostic) {}
 func (f checkpointObservation) DumpContext(ctx context.Context, event string, snapshot []byte) {
 	f(ctx, event, snapshot)

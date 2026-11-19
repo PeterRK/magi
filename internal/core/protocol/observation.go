@@ -64,6 +64,9 @@ type Observation interface {
 	BeforeModelRequest(ctx context.Context, callID string, requestBody []byte) error
 	// RecordModelRequest records final statistics, response and error for one HTTP attempt.
 	RecordModelRequest(ctx context.Context, diagnostic *RequestDiagnostic, response *Response, err error)
+	// RecordModelOutputError saves a response rejected by core validation, including
+	// failed compaction output. It must not change validation, retries or settlement.
+	RecordModelOutputError(ctx context.Context, request *Request, response *Response, err error)
 	// RecordToolExecution records statistics for a finished external tool, including failures.
 	RecordToolExecution(ctx context.Context, diagnostic *ToolDiagnostic)
 	// NotifyReplyRequired precedes display only when show_user requires an answer.

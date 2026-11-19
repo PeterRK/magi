@@ -4,6 +4,7 @@ package model
 
 import (
 	"context"
+	"crypto/tls"
 	jsonv2 "encoding/json/v2"
 	"errors"
 	"net/http"
@@ -46,6 +47,12 @@ func FromEnv() (protocol.Model, error) {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.Protocols = new(http.Protocols)
 	transport.Protocols.SetHTTP1(true)
+	// Clone may inherit h2 ALPN from the configured default transport. Keep TLS
+	// negotiation aligned with the HTTP/1-only stream cancellation policy.
+	if transport.TLSClientConfig == nil {
+		transport.TLSClientConfig = new(tls.Config)
+	}
+	transport.TLSClientConfig.NextProtos = []string{"http/1.1"}
 	return &client{key: key, url: endpoint, http: &http.Client{
 		Transport:     transport,
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },

@@ -25,6 +25,8 @@ func (f interactionObservation) NotifyReplyRequired()                           
 func (interactionObservation) BeforeModelRequest(context.Context, string, []byte) error { return nil }
 func (interactionObservation) RecordModelRequest(context.Context, *protocol.RequestDiagnostic, *protocol.Response, error) {
 }
+func (interactionObservation) RecordModelOutputError(context.Context, *protocol.Request, *protocol.Response, error) {
+}
 func (interactionObservation) RecordToolExecution(context.Context, *protocol.ToolDiagnostic) {}
 func (interactionObservation) DumpContext(context.Context, string, []byte)                   {}
 

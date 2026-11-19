@@ -350,6 +350,8 @@ func (toolObservation) NotifyReplyRequired() {}
 func (toolObservation) BeforeModelRequest(context.Context, string, []byte) error { return nil }
 func (toolObservation) RecordModelRequest(context.Context, *protocol.RequestDiagnostic, *protocol.Response, error) {
 }
+func (toolObservation) RecordModelOutputError(context.Context, *protocol.Request, *protocol.Response, error) {
+}
 func (toolObservation) DumpContext(context.Context, string, []byte) {}
 
 func (toolObservation) RecordToolExecution(context.Context, *protocol.ToolDiagnostic) {}

@@ -2,6 +2,7 @@ package debug
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/tls"
 	"encoding/json"
 	"encoding/json/jsontext"
@@ -143,6 +144,46 @@ func (Observer) RecordModelRequest(ctx context.Context, diagnostic *protocol.Req
 		meta.Usage, meta.TokenDetails, meta.Finish = &usage, result.TokenDetails, result.FinishReason
 	}
 	if err := saveMetadata(dir, &meta); err != nil {
+		warnRecordOmitted()
+	}
+}
+
+// RecordModelOutputError observes logical rejection after a successful provider
+// response. Minimal capture retains the output, not another full input history.
+func (Observer) RecordModelOutputError(ctx context.Context, input *protocol.Request, response *protocol.Response, outputErr error) {
+	dir, err := sessionDirectory(ctx)
+	if err != nil {
+		warnRecordOmitted()
+		return
+	}
+	if dir == "" {
+		return
+	}
+	tools := make([]string, len(input.Tools))
+	for i := range input.Tools {
+		tools[i] = input.Tools[i].Function.Name
+	}
+	var request *protocol.Request
+	if fullCapture() {
+		request = input
+	}
+	raw, err := jsonv2.Marshal(struct {
+		protocol.DiagnosticIdentity
+		Captured     time.Time          `json:"captured_at"`
+		Error        string             `json:"validation_error"`
+		Response     *protocol.Response `json:"response"`
+		Effort       string             `json:"requested_effort"`
+		LongOutput   bool               `json:"requested_long_output"`
+		MessageCount int                `json:"message_count"`
+		AllowedTools []string           `json:"allowed_tools"`
+		Request      *protocol.Request  `json:"request,omitzero"`
+	}{protocol.DiagnosticIdentityFromContext(ctx), time.Now().UTC(), outputErr.Error(), response,
+		map[protocol.Effort]string{protocol.EffortHigh: "high", protocol.EffortLow: "low", protocol.EffortMax: "max"}[input.Effort],
+		input.LongOutput, len(input.Messages), tools, request})
+	if err == nil {
+		err = writeCapture(dir, "invalid-responses", rand.Text()+".json", raw)
+	}
+	if err != nil {
 		warnRecordOmitted()
 	}
 }
